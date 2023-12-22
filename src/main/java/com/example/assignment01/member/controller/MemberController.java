@@ -1,0 +1,57 @@
+package com.example.assignment01.member.controller;
+
+import com.example.assignment01.global.dto.CommonResponse;
+import com.example.assignment01.member.dto.InviteUrlDto;
+import com.example.assignment01.member.dto.MemberDto;
+import com.example.assignment01.member.entity.Member;
+import com.example.assignment01.member.service.MemberService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequiredArgsConstructor
+public class MemberController {
+
+    private final MemberService memberService;
+
+
+    // 멤버 초대
+    @PostMapping("/member/invite")
+    public CommonResponse inviteMember(@RequestBody @Valid MemberDto dto) {
+
+        Member member = memberService.save(dto);
+
+        String inviteUrl = "/member/invite/" + member.getInviteToken();
+
+        InviteUrlDto result = new InviteUrlDto();
+        result.setUrl(inviteUrl);
+
+        return new CommonResponse(result);
+    }
+
+
+    // 초대 링크 접속 -> 임시 회원 활성화
+    @PostMapping("/member/invite/{inviteToken}")
+    public CommonResponse inviteMember(@PathVariable(value="inviteToken") String inviteToken) {
+
+        System.out.println(inviteToken);
+
+        try {
+            memberService.activeMember(inviteToken);
+
+            return new CommonResponse("ok");
+        }
+        catch (IllegalStateException ise) {
+            CommonResponse commonResponse = new CommonResponse();
+            commonResponse.setError(HttpStatus.BAD_REQUEST, ise.getMessage());
+
+            return commonResponse;
+        }
+    }
+
+}
